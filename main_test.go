@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -41,4 +42,62 @@ func Test_loadSpec(t *testing.T) {
 	}
 	resultSpec := loadSpec(bytes.NewReader(stateData))
 	assert.True(t, reflect.DeepEqual(resultSpec, specValue))
+}
+
+func Test_archiveUpperDirs(t *testing.T) {
+	srcDir, err := os.MkdirTemp("", "src")
+	if err != nil {
+		t.Fatal(err)
+	}
+	nestedFileData := []byte("MOCK_CONTENT")
+	nestedFileDir := path.Join(srcDir, "nested", "dir")
+	nestedFilePath := path.Join(nestedFileDir, "file.txt")
+	err = os.MkdirAll(nestedFileDir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(nestedFilePath, nestedFileData, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	destDir, err := os.MkdirTemp("", "dest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	containerSpec := spec.Spec{
+		Version: spec.Version,
+		Mounts: []spec.Mount{
+			{
+				Destination: "/dev",
+				Source:      "tmpfs",
+				Type:        "tmpfs",
+				Options: []string{
+					"nosuid",
+					"strictatime",
+					"mode=755",
+					"size=65536k",
+				},
+			},
+			{
+				Destination: "/data",
+				Source:      "/path/to/source",
+				Type:        "overlay",
+				Options: []string{
+					"lowerdir=/path/to/lower",
+					fmt.Sprintf("upperdir=%s", srcDir),
+					"workdir=/path/to/work",
+					"private",
+				},
+			},
+		},
+	}
+	archives := map[string]Archive{"/data": {Src: "/data", Dest: destDir, Name: "data"}}
+	archiveUpperDirs(containerSpec, archives)
+
+	resultData, err := os.ReadFile(path.Join(destDir, "nested", "dir", "file.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, string(resultData), string(nestedFileData))
 }

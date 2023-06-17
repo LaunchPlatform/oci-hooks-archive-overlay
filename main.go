@@ -25,18 +25,18 @@ func loadSpec(stateInput io.Reader) spec.Spec {
 	jsonFile, err := os.Open(configPath)
 	defer jsonFile.Close()
 	if err != nil {
-		log.Fatalf("Failed to open OCI spec config %s with error %s", configPath, err)
+		log.Fatalf("Failed to open OCI spec file %s with error %s", configPath, err)
 	}
-	var config spec.Spec
-	err = json.NewDecoder(jsonFile).Decode(&config)
+	var containerSpec spec.Spec
+	err = json.NewDecoder(jsonFile).Decode(&containerSpec)
 	if err != nil {
-		log.Fatalf("Failed to parse OCI spec config JSON file %s with error %s", configPath, err)
+		log.Fatalf("Failed to parse OCI spec JSON file %s with error %s", configPath, err)
 	}
-	return config
+	return containerSpec
 }
 
-func archiveUpperDirs(config spec.Spec, destArchives map[string]Archive) {
-	for _, mount := range config.Mounts {
+func archiveUpperDirs(containerSpec spec.Spec, destArchives map[string]Archive) {
+	for _, mount := range containerSpec.Mounts {
 		archive, ok := destArchives[mount.Destination]
 		if !ok {
 			continue
@@ -64,13 +64,13 @@ func archiveUpperDirs(config spec.Spec, destArchives map[string]Archive) {
 }
 
 func main() {
-	config := loadSpec(os.Stdin)
-	destArchives := parseArchives(config.Annotations)
+	containerSpec := loadSpec(os.Stdin)
+	destArchives := parseArchives(containerSpec.Annotations)
 	archivesJson, err := json.Marshal(destArchives)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Debugf("Parsed archives: %s", string(archivesJson))
-	archiveUpperDirs(config, destArchives)
+	archiveUpperDirs(containerSpec, destArchives)
 	log.Infof("Done")
 }
