@@ -18,7 +18,7 @@ const (
 	upperDirPrefix    string = "upperdir="
 )
 
-func parseArchives(annotations map[string]string) map[string]Archive {
+func ParseArchives(annotations map[string]string) map[string]Archive {
 	archives := map[string]Archive{}
 	for key, value := range annotations {
 		if !strings.HasPrefix(key, annotationPrefix) {
@@ -42,10 +42,10 @@ func parseArchives(annotations map[string]string) map[string]Archive {
 		archives[archiveName] = archive
 	}
 
-	// Create map from dest to archives
+	// Convert map from using name as the key to use dest instead
 	destArchives := map[string]Archive{}
 	for _, archive := range archives {
-		destArchives[archive.Name] = archive
+		destArchives[archive.Dest] = archive
 	}
 	return destArchives
 }

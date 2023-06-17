@@ -1,0 +1,32 @@
+package archive_overlay
+
+import (
+	"reflect"
+	"testing"
+)
+
+func TestParseArchives(t *testing.T) {
+	type args struct {
+		annotations map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]Archive
+	}{
+		{"empty", args{annotations: map[string]string{"foo": "bar"}}, map[string]Archive{}},
+		{
+			"one", args{annotations: map[string]string{
+			"com.launchplatform.oci-hooks.archive-overlay.data.src":  "/path/to/src",
+			"com.launchplatform.oci-hooks.archive-overlay.data.dest": "/path/to/dest",
+		}}, map[string]Archive{"/path/to/dest": {Name: "data", Src: "/path/to/src", Dest: "/path/to/dest"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ParseArchives(tt.args.annotations); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ParseArchives() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

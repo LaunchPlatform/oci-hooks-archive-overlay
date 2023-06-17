@@ -26,7 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	destArchives := parseArchives(config.Annotations)
+	destArchives := ParseArchives(config.Annotations)
 
 	for _, mount := range config.Mounts {
 		archive, ok := destArchives[mount.Destination]
