@@ -1,7 +1,7 @@
 package archive_overlay
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -36,7 +36,7 @@ func ParseArchives(annotations map[string]string) map[string]Archive {
 		} else if archiveArg == annotationDestArg {
 			archive.Dest = value
 		} else {
-			log.Printf("Invalid archive argument %s for archive %s\n", archiveArg, archiveName)
+			log.Warnf("Invalid archive argument %s for archive %s, ignored", archiveArg, archiveName)
 			continue
 		}
 		archives[archiveName] = archive
@@ -45,6 +45,18 @@ func ParseArchives(annotations map[string]string) map[string]Archive {
 	// Convert map from using name as the key to use dest instead
 	destArchives := map[string]Archive{}
 	for _, archive := range archives {
+		var emptyValue = false
+		if archive.Src == "" {
+			log.Warnf("Empty src archive argument value for archive %s, ignored", archive.Name)
+			emptyValue = true
+		}
+		if archive.Dest == "" {
+			log.Warnf("Empty dest archive argument value for archive %s, ignored", archive.Name)
+			emptyValue = true
+		}
+		if emptyValue {
+			continue
+		}
 		destArchives[archive.Dest] = archive
 	}
 	return destArchives
