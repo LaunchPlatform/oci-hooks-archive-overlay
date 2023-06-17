@@ -1,4 +1,4 @@
-package archive_overlay
+package main
 
 import (
 	log "github.com/sirupsen/logrus"
