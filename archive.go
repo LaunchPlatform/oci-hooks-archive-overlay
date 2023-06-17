@@ -15,7 +15,6 @@ const (
 	annotationPrefix  string = "com.launchplatform.oci-hooks.archive-overlay."
 	annotationSrcArg  string = "src"
 	annotationDestArg string = "dest"
-	upperDirPrefix    string = "upperdir="
 )
 
 func ParseArchives(annotations map[string]string) map[string]Archive {

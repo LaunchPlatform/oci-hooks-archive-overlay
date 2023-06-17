@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+const (
+	upperDirPrefix string = "upperdir="
+)
+
 func main() {
 	var state spec.State
 	err := json.NewDecoder(os.Stdin).Decode(&state)
