@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestParseArchives(t *testing.T) {
+func Test_parseArchives(t *testing.T) {
 	type args struct {
 		annotations map[string]string
 	}
