@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
+	cp "github.com/otiai10/copy"
 	"log"
 	"os"
 	"path"
@@ -10,10 +11,14 @@ import (
 )
 
 const (
-	annotationPrefix string = "com.launchplatform.oci-hooks.archive-overlay."
+	annotationPrefix  string = "com.launchplatform.oci-hooks.archive-overlay."
+	annotationSrcArg  string = "src"
+	annotationDestArg string = "dest"
+	upperDirPrefix    string = "upperdir="
 )
 
 type Archive struct {
+	Name string
 	Src  string
 	Dest string
 }
@@ -41,20 +46,50 @@ func main() {
 		}
 		keySuffix := key[len(annotationPrefix):]
 		parts := strings.Split(keySuffix, ".")
-		archiveKey, archiveArg := parts[0], parts[1]
-		archive, ok := archives[archiveKey]
+		archiveName, archiveArg := parts[0], parts[1]
+		archive, ok := archives[archiveName]
 		if !ok {
-			archive = Archive{}
+			archive = Archive{Name: archiveName}
 		}
-		if archiveArg == "src" {
+		if archiveArg == annotationSrcArg {
 			archive.Src = value
-		} else if archiveArg == "dest" {
+		} else if archiveArg == annotationDestArg {
 			archive.Dest = value
 		} else {
 			log.Printf("Invalid archive argument %s\n", archiveArg)
 			continue
 		}
-		archives[archiveKey] = archive
+		archives[archiveName] = archive
 	}
 
+	// Create map from dest to archives
+	destArchives := map[string]Archive{}
+	for _, archive := range archives {
+		destArchives[archive.Name] = archive
+	}
+
+	for _, mount := range config.Mounts {
+		archive, ok := destArchives[mount.Destination]
+		if !ok {
+			continue
+		}
+		var upperDir = ""
+		for _, option := range mount.Options {
+			if strings.HasPrefix(option, upperDirPrefix) {
+				upperDir = option[len(upperDirPrefix):]
+				break
+			}
+		}
+		if upperDir == "" {
+			mountJson, err := json.Marshal(mount)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Fatalf("Cannot find upperdir for archive %s in mount %s\n", archive.Name, string(mountJson))
+		}
+		err := cp.Copy(upperDir, archive.Dest)
+		if err != nil {
+			log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.Dest, archive.Name, err)
+		}
+	}
 }
