@@ -6,6 +6,7 @@ import (
 	"fmt"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/assert"
+	"io/fs"
 	"os"
 	"path"
 	"reflect"
@@ -95,9 +96,21 @@ func Test_archiveUpperDirs(t *testing.T) {
 	archives := map[string]Archive{"/data": {Src: "/data", Dest: destDir, Name: "data"}}
 	archiveUpperDirs(containerSpec, archives)
 
-	resultData, err := os.ReadFile(path.Join(destDir, "nested", "dir", "file.txt"))
+	destNestedFileDir := path.Join(destDir, "nested", "dir")
+	destNestedFilePath := path.Join(destNestedFileDir, "file.txt")
+	resultData, err := os.ReadFile(destNestedFilePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, string(resultData), string(nestedFileData))
+	fileInfo, err := os.Stat(destNestedFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, fileInfo.Mode().Perm(), fs.FileMode(0600))
+	fileInfo, err = os.Stat(destNestedFileDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, fileInfo.Mode().Perm(), fs.FileMode(0755))
 }
