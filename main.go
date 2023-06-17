@@ -1,4 +1,4 @@
-package main
+package archive_overlay
 
 import (
 	"encoding/json"
@@ -9,19 +9,6 @@ import (
 	"path"
 	"strings"
 )
-
-const (
-	annotationPrefix  string = "com.launchplatform.oci-hooks.archive-overlay."
-	annotationSrcArg  string = "src"
-	annotationDestArg string = "dest"
-	upperDirPrefix    string = "upperdir="
-)
-
-type Archive struct {
-	Name string
-	Src  string
-	Dest string
-}
 
 func main() {
 	var state spec.State
@@ -39,34 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	archives := map[string]Archive{}
-	for key, value := range config.Annotations {
-		if !strings.HasPrefix(key, annotationPrefix) {
-			continue
-		}
-		keySuffix := key[len(annotationPrefix):]
-		parts := strings.Split(keySuffix, ".")
-		archiveName, archiveArg := parts[0], parts[1]
-		archive, ok := archives[archiveName]
-		if !ok {
-			archive = Archive{Name: archiveName}
-		}
-		if archiveArg == annotationSrcArg {
-			archive.Src = value
-		} else if archiveArg == annotationDestArg {
-			archive.Dest = value
-		} else {
-			log.Printf("Invalid archive argument %s\n", archiveArg)
-			continue
-		}
-		archives[archiveName] = archive
-	}
-
-	// Create map from dest to archives
-	destArchives := map[string]Archive{}
-	for _, archive := range archives {
-		destArchives[archive.Name] = archive
-	}
+	destArchives := parseArchives(config.Annotations)
 
 	for _, mount := range config.Mounts {
 		archive, ok := destArchives[mount.Destination]
