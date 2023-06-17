@@ -49,7 +49,7 @@ func parseArchives(annotations map[string]string) map[string]Archive {
 	for _, archive := range archives {
 		var emptyValue = false
 		if archive.MountPoint == "" {
-			log.Warnf("Empty mount-point archive argument value for archive %s, ignored", archive.Name)
+			log.Warnf("Empty mount-point archive argument value for archiving %s, ignored", archive.Name)
 			emptyValue = true
 		}
 		if archive.ArchiveTo == "" {
