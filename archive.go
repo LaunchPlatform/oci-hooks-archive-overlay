@@ -17,7 +17,7 @@ const (
 	annotationDestArg string = "dest"
 )
 
-func ParseArchives(annotations map[string]string) map[string]Archive {
+func parseArchives(annotations map[string]string) map[string]Archive {
 	archives := map[string]Archive{}
 	for key, value := range annotations {
 		if !strings.HasPrefix(key, annotationPrefix) {

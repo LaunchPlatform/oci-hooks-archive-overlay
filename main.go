@@ -15,7 +15,7 @@ const (
 	upperDirPrefix string = "upperdir="
 )
 
-func loadConfig(stateInput io.Reader) spec.Spec {
+func loadSpec(stateInput io.Reader) spec.Spec {
 	var state spec.State
 	err := json.NewDecoder(stateInput).Decode(&state)
 	if err != nil {
@@ -64,8 +64,8 @@ func archiveUpperDirs(config spec.Spec, destArchives map[string]Archive) {
 }
 
 func main() {
-	config := loadConfig(os.Stdin)
-	destArchives := ParseArchives(config.Annotations)
+	config := loadSpec(os.Stdin)
+	destArchives := parseArchives(config.Annotations)
 	archivesJson, err := json.Marshal(destArchives)
 	if err != nil {
 		log.Fatal(err)

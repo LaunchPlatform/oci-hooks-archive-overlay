@@ -4,26 +4,41 @@ import (
 	"bytes"
 	"encoding/json"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/stretchr/testify/assert"
 	"os"
-	"os/exec"
+	"path"
+	"reflect"
 	"testing"
 )
 
-func TestRun(t *testing.T) {
-	cmd := exec.Command(os.Args[0])
-	state, err := json.Marshal(spec.State{
-		Version: spec.Version,
-		ID:      "MOCK_ID",
-		Status:  "stopped",
-		Bundle:  "/path/to/bundle",
-	})
+func Test_loadSpec(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "bundle")
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmd.Stdin = bytes.NewReader(state)
-	err = cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
+	specValue := spec.Spec{
+		Version: spec.Version,
+		Mounts: []spec.Mount{
+			{
+				Destination: "/data",
+				Source:      "/path/to/source",
+				Options:     []string{"nodev"},
+			},
+		},
 	}
-	t.Fatalf("process err %v, want exit status 1", err)
+	configData, err := json.Marshal(specValue)
+	if err != nil {
+		t.Fatal(err)
+	}
+	configPath := path.Join(tempDir, "config.json")
+	err = os.WriteFile(configPath, configData, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stateData, err := json.Marshal(spec.State{Bundle: tempDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resultSpec := loadSpec(bytes.NewReader(stateData))
+	assert.True(t, reflect.DeepEqual(resultSpec, specValue))
 }
