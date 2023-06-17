@@ -93,7 +93,7 @@ func Test_archiveUpperDirs(t *testing.T) {
 			},
 		},
 	}
-	archives := map[string]Archive{"/data": {Src: "/data", Dest: destDir, Name: "data"}}
+	archives := map[string]Archive{"/data": {MountPoint: "/data", ArchiveTo: destDir, Name: "data"}}
 	archiveUpperDirs(containerSpec, archives)
 
 	destNestedFileDir := path.Join(destDir, "nested", "dir")

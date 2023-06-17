@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"path"
@@ -12,7 +14,13 @@ import (
 )
 
 const (
-	upperDirPrefix string = "upperdir="
+	upperDirPrefix  = "upperdir="
+	defaultLogLevel = "info"
+)
+
+var (
+	LogLevels = []string{"trace", "debug", "info", "warn", "warning", "error", "fatal", "panic"}
+	logLevel  = defaultLogLevel
 )
 
 func loadSpec(stateInput io.Reader) spec.Spec {
@@ -35,10 +43,15 @@ func loadSpec(stateInput io.Reader) spec.Spec {
 	return containerSpec
 }
 
-func archiveUpperDirs(containerSpec spec.Spec, destArchives map[string]Archive) {
+func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Archive) {
 	for _, mount := range containerSpec.Mounts {
-		archive, ok := destArchives[mount.Destination]
+		if mount.Type != "overlay" {
+			log.Warnf("Unexpected mount type %s, only overlap supported for now, ignored mount at %s", mount.Type, mount.Destination)
+			continue
+		}
+		archive, ok := mountPointArchives[mount.Destination]
 		if !ok {
+			log.Tracef("Cannot find mount point %s to archive, skip", mount.Destination)
 			continue
 		}
 		var upperDir = ""
@@ -55,15 +68,15 @@ func archiveUpperDirs(containerSpec spec.Spec, destArchives map[string]Archive) 
 			}
 			log.Fatalf("Cannot find upperdir for archive %s in mount %s", archive.Name, string(mountJson))
 		}
-		log.Infof("Copying upperdir from %s to %s for archive %s", upperDir, archive.Dest, archive.Name)
-		err := cp.Copy(upperDir, archive.Dest)
+		log.Infof("Copying upperdir from %s to %s for archive %s", upperDir, archive.ArchiveTo, archive.Name)
+		err := cp.Copy(upperDir, archive.ArchiveTo)
 		if err != nil {
-			log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.Dest, archive.Name, err)
+			log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
 		}
 	}
 }
 
-func main() {
+func run() {
 	containerSpec := loadSpec(os.Stdin)
 	destArchives := parseArchives(containerSpec.Annotations)
 	archivesJson, err := json.Marshal(destArchives)
@@ -73,4 +86,49 @@ func main() {
 	log.Debugf("Parsed archives: %s", string(archivesJson))
 	archiveUpperDirs(containerSpec, destArchives)
 	log.Infof("Done")
+}
+
+func setupLogLevel() {
+	var found = false
+	for _, level := range LogLevels {
+		if level == strings.ToLower(logLevel) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		fmt.Fprintf(os.Stderr, "Log Level %q is not supported, choose from: %s\n", logLevel, strings.Join(LogLevels, ", "))
+		os.Exit(1)
+	}
+
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+	log.SetLevel(level)
+}
+
+func main() {
+	var rootCmd = &cobra.Command{
+		Use:   "archive_overlay [options]",
+		Short: "Invoked as a poststop OCI-hooks to archive upperdir of specific overlay mount",
+		Run: func(cmd *cobra.Command, args []string) {
+			setupLogLevel()
+			run()
+		},
+	}
+	pFlags := rootCmd.PersistentFlags()
+	logLevelFlagName := "log-level"
+	pFlags.StringVar(
+		&logLevel,
+		logLevelFlagName,
+		logLevel,
+		fmt.Sprintf("Log messages above specified level (%s)", strings.Join(LogLevels, ", ")),
+	)
+
+	err := rootCmd.Execute()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
