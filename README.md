@@ -27,7 +27,15 @@ A read-write mount in the OCI spec config may look like this
 }
 ```
 
-Then you can modify the content files of the image at the mounted directory.
-For many usecases, one may like to capture the changes made to the mounted from the container.
+As you can see it's an [overlayfs](https://docs.kernel.org/filesystems/overlayfs.html) mount.
+Then you can modify the content files of the image at the mounted directory in the container.
+For many usecases, one could be to capture the changes made to the mounted from the container.
+Given the example shown above, the changes made to the `merge` will result in the `upper` directory:
+
+```
+/home/user/.local/share/containers/storage/overlay-containers/f6e6a7a7eaeb695bb433da1e057d92d9c2e376fb9920792c809d2c1af49e5709/userdata/overlay/3190055391/upper
+```
+
 With the changes to the files in the original mounted image captured, you can then make a layer-based file system with revision history.
-You can think about using it like Docker images or OCI container images but with data changes in each layers.
+You can think about using it like Docker images or OCI container images but with just data changes in each layers.
+The job of this hook is to archive the `upperdir` after the container stops.
