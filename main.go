@@ -5,6 +5,7 @@ import (
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -14,14 +15,15 @@ const (
 	upperDirPrefix string = "upperdir="
 )
 
-func main() {
+func loadConfig(stateInput io.Reader) spec.Spec {
 	var state spec.State
-	err := json.NewDecoder(os.Stdin).Decode(&state)
+	err := json.NewDecoder(stateInput).Decode(&state)
 	if err != nil {
 		log.Fatalf("Failed to parse stdin with error %s", err)
 	}
 	configPath := path.Join(state.Bundle, "config.json")
 	jsonFile, err := os.Open(configPath)
+	defer jsonFile.Close()
 	if err != nil {
 		log.Fatalf("Failed to open OCI spec config %s with error %s", configPath, err)
 	}
@@ -30,14 +32,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse OCI spec config JSON file %s with error %s", configPath, err)
 	}
+	return config
+}
 
-	destArchives := ParseArchives(config.Annotations)
-	archivesJson, err := json.Marshal(destArchives)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Debugf("Parsed archives: %s", string(archivesJson))
-
+func archiveUpperDirs(config spec.Spec, destArchives map[string]Archive) {
 	for _, mount := range config.Mounts {
 		archive, ok := destArchives[mount.Destination]
 		if !ok {
@@ -63,5 +61,16 @@ func main() {
 			log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.Dest, archive.Name, err)
 		}
 	}
+}
+
+func main() {
+	config := loadConfig(os.Stdin)
+	destArchives := ParseArchives(config.Annotations)
+	archivesJson, err := json.Marshal(destArchives)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Debugf("Parsed archives: %s", string(archivesJson))
+	archiveUpperDirs(config, destArchives)
 	log.Infof("Done")
 }
