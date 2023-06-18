@@ -99,3 +99,14 @@ Here's an example:
 ```
 
 For more information about the OCI hooks schema, please see the [document here](https://github.com/containers/podman/blob/v3.4.7/pkg/hooks/docs/oci-hooks.5.md).
+
+# Debug
+
+To debug the hook, you can add `--log-level=debug` (or `trace` if you need more details) argument for the `archive_overlay` executable, it will print debug information.
+With OCI runtimes like [crun](https://github.com/containers/crun), you can also add an annotation like this:
+
+```
+run.oci.hooks.stderr=/path/to/stderr
+```
+
+to make the runtime redirect the stderr from the hook executable to specific file.
