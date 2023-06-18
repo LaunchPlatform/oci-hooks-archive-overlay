@@ -24,7 +24,7 @@ jobs:
             gotestsum --junitfile /tmp/test-reports/unit-tests.xml
       - store_test_results:
           path: /tmp/test-reports
-  publish:
+  build:
     working_directory: ~/repo
     docker:
       - image: circleci/golang:1.17.5
@@ -48,11 +48,30 @@ jobs:
       - store_artifacts:
           path: /tmp/artifacts
           destination: artifacts
-
+      - persist_to_workspace:
+          root: /tmp/artifacts
+          paths:
+            - *
+  publish-github-release:
+    docker:
+      - image: circleci/golang:1.17.5
+    steps:
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            go get github.com/tcnksm/ghr
+            VERSION=$(./artifacts/archive_overlay --version)
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
 workflows:
-  test_and_publish:
+  build_and_publish:
     jobs:
       - test
-      - publish:
+      - build:
           requires:
           - test
+      - publish-github-release:
+          requires:
+            - build
+          # TODO: limit tags
