@@ -51,7 +51,7 @@ jobs:
       - persist_to_workspace:
           root: /tmp/artifacts
           paths:
-            - *
+            - "*"
   publish-github-release:
     docker:
       - image: circleci/golang:1.17.5
