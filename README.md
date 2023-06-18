@@ -75,7 +75,7 @@ There are different ways of running a container, if you are generating OCI spec 
 }
 ```
 
-For more information about the OCI spec schema, please see the [document here]([https://github.com/containers/podman/blob/v3.4.7/pkg/hooks/docs/oci-hooks.5.md](https://github.com/opencontainers/runtime-spec/blob/48415de180cf7d5168ca53a5aa27b6fcec8e4d81/config.md#posix-platform-hooks)).
+For more information about the OCI spec schema, please see the [document here](https://github.com/opencontainers/runtime-spec/blob/48415de180cf7d5168ca53a5aa27b6fcec8e4d81/config.md#posix-platform-hooks).
 
 ## Add OCI hook config
 
