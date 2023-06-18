@@ -111,10 +111,12 @@ func setupLogLevel() {
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "archive_overlay [options]",
-		Short: "Invoked as a poststop OCI-hooks to archive upperdir of specific overlay mount",
+		Use:     "archive_overlay [options]",
+		Short:   "Invoked as a poststop OCI-hooks to archive upperdir of specific overlay mount",
+		Version: Version,
 		Run: func(cmd *cobra.Command, args []string) {
 			setupLogLevel()
+			log.Infof("Run archive_overlay %s", Version)
 			run()
 		},
 	}
