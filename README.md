@@ -89,9 +89,9 @@ Here's an example:
     "path": "/usr/bin/archive_overlay"
   },
   "when": {
-    "annotations": [
-        "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.[^.]+.mount-point=(.+)",
-        "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.[^.]+.archive-to=(.+)"
+    "annotations": {
+        "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.([^.]+)\\.mount-point": "(.+)",
+        "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.([^.]+)\\.archive-to": "(.+)"
     ]
   },
   "stages": ["poststop"]
