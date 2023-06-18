@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  build:
+  test:
     working_directory: ~/repo
     docker:
       - image: circleci/golang:1.17.5
@@ -24,8 +24,35 @@ jobs:
             gotestsum --junitfile /tmp/test-reports/unit-tests.xml
       - store_test_results:
           path: /tmp/test-reports
+  publish:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/golang:1.17.5
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Install Dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+      - run:
+          name: Build
+          command: |
+            mkdir /tmp/artifacts
+            CGO_ENABLED=0 go build -o /tmp/artifacts/archive_overlay -a -ldflags '-extldflags "-static"' .
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: artifacts
 
 workflows:
-  build_and_publish:
+  test_and_publish:
     jobs:
-      - build
+      - test
+      - publish:
+          depends:
+          - test
