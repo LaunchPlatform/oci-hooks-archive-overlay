@@ -64,7 +64,7 @@ Here's an example command with podman:
 podman run \
     --annotation=com.launchplatform.oci-hooks.archive-overlay.data.mount-point=/data \
     --annotation=com.launchplatform.oci-hooks.archive-overlay.data.archive-to=/tmp/my-archive \
-    --mount type=image,source=my-data-image,destination=/data,rw=true 
+    --mount type=image,source=my-data-image,destination=/data,rw=true \
     -it alpine
 # Change /data folder in the container then exit
 ls /tmp/my-archive
