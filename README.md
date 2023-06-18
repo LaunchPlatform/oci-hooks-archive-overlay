@@ -39,3 +39,19 @@ Given the example shown above, the changes made to the `merge` will result in th
 With the changes to the files in the original mounted image captured, you can then make a layer-based file system with revision history.
 You can think about using it like Docker images or OCI container images but with just data changes in each layers.
 The job of this hook is to archive the `upperdir` after the container stops.
+
+# How
+
+To use this hook, you need to add annotations to your container to tell it which upperdir of the desired overlay mount point and a given destination path to copy to after the container stops.
+There are two types of annotation you can add, one for the mount point and another for the destination of archive.
+
+- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.mount-point
+- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.archive-to
+
+The `ARCHIVE_NAME` can be any valid annotation string without a dot in it.
+The `mount-point` and `archive-to` annotations with the same archive name need to appear in pairs, otherwise it will be ignored.
+For example, to archive the upperdir of mount point `/data` to `/path/to/my-archive`, you can add annotations like this
+
+- `com.launchplatform.oci-hooks.archive-overlay.data.mount-point=/data`
+- `com.launchplatform.oci-hooks.archive-overlay.data.archive-to=/path/to/my-archive`
+
