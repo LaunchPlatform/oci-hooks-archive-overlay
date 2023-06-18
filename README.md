@@ -122,3 +122,4 @@ run.oci.hooks.stderr=/path/to/stderr
 ```
 
 to make the runtime redirect the stderr from the hook executable to specific file.
+Please note that podman invokes poststop hook instead of delegating it to crun, so the annotation won't work for podman.
