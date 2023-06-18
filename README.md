@@ -92,7 +92,7 @@ Here's an example:
     "annotations": {
         "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.([^.]+)\\.mount-point": "(.+)",
         "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.([^.]+)\\.archive-to": "(.+)"
-    ]
+    }
   },
   "stages": ["poststop"]
 }
