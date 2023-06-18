@@ -50,8 +50,10 @@ There are two types of annotation you can add, one for the mount point and anoth
 
 The `ARCHIVE_NAME` can be any valid annotation string without a dot in it.
 The `mount-point` and `archive-to` annotations with the same archive name need to appear in pairs, otherwise it will be ignored.
-For example, to archive the upperdir of mount point `/data` to `/path/to/my-archive`, you can add annotations like this
+For example, to archive the upperdir of mount point at `/data` to `/path/to/my-archive`, you can add annotations like this
 
 - `com.launchplatform.oci-hooks.archive-overlay.data.mount-point=/data`
 - `com.launchplatform.oci-hooks.archive-overlay.data.archive-to=/path/to/my-archive`
 
+Please note that the `mount-point` path should be a `destination` field of the mount, i.e, it's in the container namespace.
+And the `archive-to` should be a valid path in the runtime namespace.
