@@ -58,6 +58,18 @@ For example, to archive the upperdir of mount point at `/data` to `/path/to/my-a
 Please note that the `mount-point` path should be a `destination` field of the mount, i.e, it's in the container namespace.
 And the `archive-to` should be a valid path in the runtime namespace.
 
+Here's an example command with podman:
+
+```bash
+podman run \
+    --annotation=com.launchplatform.oci-hooks.archive-overlay.data.mount-point=/data \
+    --annotation=com.launchplatform.oci-hooks.archive-overlay.data.archive-to=/tmp/my-archive \
+    --mount type=image,source=my-data-image,destination=/data,rw=true 
+    -it alpine
+# Change /data folder in the container then exit
+ls /tmp/my-archive
+```
+
 ## Add poststop hook directly in the OCI spec
 
 There are different ways of running a container, if you are generating OCI spec yourself and running OCI runtimes such as [crun](https://github.com/containers/crun) yourself, you can add the `poststop` hook directly into the spec file like this:
