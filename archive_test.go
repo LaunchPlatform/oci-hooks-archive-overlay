@@ -22,6 +22,17 @@ func Test_parseArchives(t *testing.T) {
 		}}, map[string]Archive{"/path/to/mount-point": {Name: "data", MountPoint: "/path/to/mount-point", ArchiveTo: "/path/to/archive-to"}},
 		},
 		{
+			"multiple", args{annotations: map[string]string{
+			"com.launchplatform.oci-hooks.archive-overlay.data0.mount-point": "/path/to/mount-point0",
+			"com.launchplatform.oci-hooks.archive-overlay.data0.archive-to":  "/path/to/archive-to0",
+			"com.launchplatform.oci-hooks.archive-overlay.data1.mount-point": "/path/to/mount-point1",
+			"com.launchplatform.oci-hooks.archive-overlay.data1.archive-to":  "/path/to/archive-to1",
+		}}, map[string]Archive{
+			"/path/to/mount-point0": {Name: "data0", MountPoint: "/path/to/mount-point0", ArchiveTo: "/path/to/archive-to0"},
+			"/path/to/mount-point1": {Name: "data1", MountPoint: "/path/to/mount-point1", ArchiveTo: "/path/to/archive-to1"},
+		},
+		},
+		{
 			"invalid-key", args{annotations: map[string]string{
 			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point": "/path/to/mount-point",
 			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to":  "/path/to/archive-to",
@@ -30,12 +41,24 @@ func Test_parseArchives(t *testing.T) {
 		},
 		{
 			"empty-archive-to", args{annotations: map[string]string{
-			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to": "/path/to/archive-to",
+			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point": "/path/to/mount-point",
+			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to":  "",
 		}}, map[string]Archive{},
 		},
 		{
 			"empty-mount-point", args{annotations: map[string]string{
+			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point": "",
+			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to":  "/path/to/archive-to",
+		}}, map[string]Archive{},
+		},
+		{
+			"missing-archive-to", args{annotations: map[string]string{
 			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point": "/path/to/mount-point",
+		}}, map[string]Archive{},
+		},
+		{
+			"missing-mount-point", args{annotations: map[string]string{
+			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to": "/path/to/archive-to",
 		}}, map[string]Archive{},
 		},
 	}
