@@ -47,6 +47,7 @@ There are two types of annotation you can add, one for the mount point and anoth
 
 - com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.mount-point
 - com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.archive-to
+- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.archive-success (optional)
 
 The `ARCHIVE_NAME` can be any valid annotation string without a dot in it.
 The `mount-point` and `archive-to` annotations with the same archive name need to appear in pairs, otherwise it will be ignored.
@@ -69,6 +70,8 @@ podman run \
 # Change /data folder in the container then exit
 ls /tmp/my-archive
 ```
+
+The `archive-success` is a path to the empty file to be created as an indicator of a successful archive.
 
 ## Add poststop hook directly in the OCI spec
 
