@@ -46,6 +46,10 @@ func Test_loadSpec(t *testing.T) {
 }
 
 func Test_archiveUpperDirs(t *testing.T) {
+	outputDir, err := os.MkdirTemp("", "output")
+	if err != nil {
+		t.Fatal(err)
+	}
 	srcDir, err := os.MkdirTemp("", "src")
 	if err != nil {
 		t.Fatal(err)
@@ -66,6 +70,7 @@ func Test_archiveUpperDirs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	successFile := path.Join(outputDir, "success")
 	containerSpec := spec.Spec{
 		Version: spec.Version,
 		Mounts: []spec.Mount{
@@ -93,7 +98,14 @@ func Test_archiveUpperDirs(t *testing.T) {
 			},
 		},
 	}
-	archives := map[string]Archive{"/data": {MountPoint: "/data", ArchiveTo: destDir, Name: "data"}}
+	archives := map[string]Archive{
+		"/data": {
+			MountPoint:     "/data",
+			ArchiveTo:      destDir,
+			ArchiveSuccess: successFile,
+			Name:           "data",
+		},
+	}
 	archiveUpperDirs(containerSpec, archives)
 
 	destNestedFileDir := path.Join(destDir, "nested", "dir")
@@ -113,4 +125,7 @@ func Test_archiveUpperDirs(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, fileInfo.Mode().Perm(), fs.FileMode(0755))
+
+	_, err = os.Stat(successFile)
+	assert.Nil(t, err)
 }

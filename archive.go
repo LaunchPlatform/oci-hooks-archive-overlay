@@ -12,12 +12,15 @@ type Archive struct {
 	MountPoint string
 	// The destination for copying the upperdir folder to
 	ArchiveTo string
+	// The empty file to create for indicating archive is done successfully
+	ArchiveSuccess string
 }
 
 const (
-	annotationPrefix        string = "com.launchplatform.oci-hooks.archive-overlay."
-	annotationMountPointArg string = "mount-point"
-	annotationArchiveToArg  string = "archive-to"
+	annotationPrefix            string = "com.launchplatform.oci-hooks.archive-overlay."
+	annotationMountPointArg     string = "mount-point"
+	annotationArchiveToArg      string = "archive-to"
+	annotationArchiveSuccessArg string = "archive-success"
 )
 
 func parseArchives(annotations map[string]string) map[string]Archive {
@@ -33,11 +36,14 @@ func parseArchives(annotations map[string]string) map[string]Archive {
 		if !ok {
 			archive = Archive{Name: archiveName}
 		}
-		if archiveArg == annotationMountPointArg {
+		switch archiveArg {
+		case annotationMountPointArg:
 			archive.MountPoint = value
-		} else if archiveArg == annotationArchiveToArg {
+		case annotationArchiveToArg:
 			archive.ArchiveTo = value
-		} else {
+		case annotationArchiveSuccessArg:
+			archive.ArchiveSuccess = value
+		default:
 			log.Warnf("Invalid archive argument %s for archive %s, ignored", archiveArg, archiveName)
 			continue
 		}

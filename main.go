@@ -73,6 +73,12 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 		if err != nil {
 			log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
 		}
+		if archive.ArchiveSuccess != "" {
+			err := os.WriteFile(archive.ArchiveSuccess, []byte{}, 0644)
+			if err != nil {
+				log.Fatalf("Failed to write archive success file %s for archive %s with error %s", archive.ArchiveSuccess, archive.Name, err)
+			}
+		}
 	}
 }
 
