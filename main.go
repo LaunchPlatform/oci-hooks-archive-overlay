@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -119,10 +120,25 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			}
 			log.Fatalf("Cannot find upperdir for archive %s in mount %s", archive.Name, string(mountJson))
 		}
-		log.Infof("Copying upperdir from %s to %s for archive %s", upperDir, archive.ArchiveTo, archive.Name)
-		err := cp.Copy(upperDir, archive.ArchiveTo)
-		if err != nil {
-			log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
+
+		var method = archive.Method
+		if method == "" {
+			method = ArchiveMethodCopy
+		}
+		if method == ArchiveMethodCopy {
+			log.Infof("Copying upperdir from %s to %s for archive %s", upperDir, archive.ArchiveTo, archive.Name)
+			err := cp.Copy(upperDir, archive.ArchiveTo)
+			if err != nil {
+				log.Fatalf("Failed to copy from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
+			}
+		} else if method == ArchiveMethodTarGzip {
+			log.Infof("Archiving upperdir from %s to %s for archive %s", upperDir, archive.ArchiveTo, archive.Name)
+			err := archiveTarGzip(upperDir, archive.ArchiveTo)
+			if err != nil {
+				log.Fatalf("Failed to archive tar.gz from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
+			}
+		} else {
+			log.Fatalf("Unknown archive method %s", method)
 		}
 		if archive.ArchiveSuccess != "" {
 			err := os.WriteFile(archive.ArchiveSuccess, []byte{}, 0644)

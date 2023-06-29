@@ -25,15 +25,29 @@ func Test_parseArchives(t *testing.T) {
 		},
 		{
 			"archive-success", args{annotations: map[string]string{
-			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point":     "/path/to/mount-point",
-			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to":      "/path/to/archive-to",
-			"com.launchplatform.oci-hooks.archive-overlay.data.archive-success": "/path/to/archive-success",
+			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point": "/path/to/mount-point",
+			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to":  "/path/to/archive-to",
+			"com.launchplatform.oci-hooks.archive-overlay.data.success":     "/path/to/archive-success",
 		}}, map[string]Archive{
 			"/path/to/mount-point": {
 				Name:           "data",
 				MountPoint:     "/path/to/mount-point",
 				ArchiveTo:      "/path/to/archive-to",
 				ArchiveSuccess: "/path/to/archive-success",
+			},
+		},
+		},
+		{
+			"method", args{annotations: map[string]string{
+			"com.launchplatform.oci-hooks.archive-overlay.data.mount-point": "/path/to/mount-point",
+			"com.launchplatform.oci-hooks.archive-overlay.data.archive-to":  "/path/to/archive-to",
+			"com.launchplatform.oci-hooks.archive-overlay.data.method":      "tar.gz",
+		}}, map[string]Archive{
+			"/path/to/mount-point": {
+				Name:       "data",
+				MountPoint: "/path/to/mount-point",
+				ArchiveTo:  "/path/to/archive-to",
+				Method:     "tar.gz",
 			},
 		},
 		},

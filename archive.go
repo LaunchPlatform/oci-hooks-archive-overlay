@@ -14,13 +14,21 @@ type Archive struct {
 	ArchiveTo string
 	// The empty file to create for indicating archive is done successfully
 	ArchiveSuccess string
+	// Archive method
+	Method string
 }
 
 const (
-	annotationPrefix            string = "com.launchplatform.oci-hooks.archive-overlay."
-	annotationMountPointArg     string = "mount-point"
-	annotationArchiveToArg      string = "archive-to"
-	annotationArchiveSuccessArg string = "archive-success"
+	ArchiveMethodCopy    string = "copy"
+	ArchiveMethodTarGzip        = "tar.gz"
+)
+
+const (
+	annotationPrefix        string = "com.launchplatform.oci-hooks.archive-overlay."
+	annotationMountPointArg string = "mount-point"
+	annotationArchiveToArg  string = "archive-to"
+	annotationMethodArg     string = "method"
+	annotationSuccessArg    string = "success"
 )
 
 func parseArchives(annotations map[string]string) map[string]Archive {
@@ -41,8 +49,10 @@ func parseArchives(annotations map[string]string) map[string]Archive {
 			archive.MountPoint = value
 		case annotationArchiveToArg:
 			archive.ArchiveTo = value
-		case annotationArchiveSuccessArg:
+		case annotationSuccessArg:
 			archive.ArchiveSuccess = value
+		case annotationMethodArg:
+			archive.Method = value
 		default:
 			log.Warnf("Invalid archive argument %s for archive %s, ignored", archiveArg, archiveName)
 			continue
@@ -60,6 +70,10 @@ func parseArchives(annotations map[string]string) map[string]Archive {
 		}
 		if archive.ArchiveTo == "" {
 			log.Warnf("Empty archive-to argument value for archive %s, ignored", archive.Name)
+			emptyValue = true
+		}
+		if archive.Method != "" && archive.Method != ArchiveMethodCopy && archive.Method != ArchiveMethodTarGzip {
+			log.Warnf("Invalid method argument value %s for archive %s, ignored", archive.Method, archive.Name)
 			emptyValue = true
 		}
 		if emptyValue {
