@@ -47,7 +47,9 @@ There are two types of annotation you can add, one for the mount point and anoth
 
 - com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.mount-point
 - com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.archive-to
-- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.archive-success (optional)
+- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.success (optional)
+- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.method (optional)
+- com.launchplatform.oci-hooks.archive-overlay.**<ARCHIVE_NAME>**.tar-content-owner (optional)
 
 The `ARCHIVE_NAME` can be any valid annotation string without a dot in it.
 The `mount-point` and `archive-to` annotations with the same archive name need to appear in pairs, otherwise it will be ignored.
@@ -71,7 +73,10 @@ podman run \
 ls /tmp/my-archive
 ```
 
-The `archive-success` is a path to the empty file to be created as an indicator of a successful archive.
+The `success` is a path to the empty file to be created as an indicator of a successful archive.
+The `method` option by default is `copy`, if you want to archive the upperdir as a tar.gz file, you can set it to `tar.gz` instead.
+If you want to change the content file owner of the tar file, you can set `tar-content-owner` value, such as `2000` or `2000:3000`.
+Please note that only integer uid and gid supported, username won't work.
 
 ## Add poststop hook directly in the OCI spec
 
