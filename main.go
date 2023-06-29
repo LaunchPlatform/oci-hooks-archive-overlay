@@ -43,6 +43,55 @@ func loadSpec(stateInput io.Reader) spec.Spec {
 	return containerSpec
 }
 
+func archiveTarGzip(src string, archiveTo string) error {
+	// ref: https://golangdocs.com/tar-gzip-in-golang
+	// ref: https://github.com/containers/podman/blob/d09edd2820e25372c63e2a9d16a42b6d258b7f80/pkg/bindings/images/build.go#L633-L791
+	// ref: https://gist.github.com/mimoo/25fc9716e0f1353791f5908f94d6e726
+	archiveFile, err := os.OpenFile(archiveTo, os.O_CREATE|os.O_RDWR, os.FileMode(600))
+	gzipWriter := gzip.NewWriter(archiveFile)
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer archiveFile.Close()
+	defer gzipWriter.Close()
+	defer tarWriter.Close()
+
+	srcPath, err := filepath.Abs(src)
+	err = filepath.Walk(src, func(path string, fileInfo os.FileInfo, err error) error {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
+		if err != nil {
+			return err
+		}
+		separator := string(filepath.Separator)
+		if absPath == srcPath {
+			separator = ""
+		}
+		header.Name = "./" + filepath.ToSlash(strings.TrimPrefix(absPath, srcPath+separator))
+		if absPath != srcPath && fileInfo.IsDir() {
+			header.Name += "/"
+		}
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
+		if !fileInfo.IsDir() {
+			data, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(tarWriter, data); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Archive) {
 	for _, mount := range containerSpec.Mounts {
 		if mount.Type != "overlay" {

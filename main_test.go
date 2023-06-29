@@ -129,3 +129,39 @@ func Test_archiveUpperDirs(t *testing.T) {
 	_, err = os.Stat(successFile)
 	assert.Nil(t, err)
 }
+
+func Test_archiveTarGzip(t *testing.T) {
+	outputDir, err := os.MkdirTemp("", "output")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srcDir, err := os.MkdirTemp("", "src")
+	if err != nil {
+		t.Fatal(err)
+	}
+	nestedFileData := []byte("MOCK_CONTENT")
+	nestedFileDir := path.Join(srcDir, "nested", "dir")
+	nestedFilePath := path.Join(nestedFileDir, "file.txt")
+	nestedWhiteOutFilePath := path.Join(nestedFileDir, ".wh.deleted.txt")
+	err = os.MkdirAll(nestedFileDir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(nestedFilePath, nestedFileData, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(nestedWhiteOutFilePath, []byte{}, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outputFile := path.Join(outputDir, "output.tar.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = archiveTarGzip(srcDir, outputFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
