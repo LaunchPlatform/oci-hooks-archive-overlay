@@ -46,11 +46,11 @@ func loadSpec(stateInput io.Reader) spec.Spec {
 	return containerSpec
 }
 
-func archiveTarGzip(src string, archiveTo string) error {
+func archiveTarGzip(src string, archiveTo string, uid int, gid int) error {
 	// ref: https://golangdocs.com/tar-gzip-in-golang
 	// ref: https://github.com/containers/podman/blob/d09edd2820e25372c63e2a9d16a42b6d258b7f80/pkg/bindings/images/build.go#L633-L791
 	// ref: https://gist.github.com/mimoo/25fc9716e0f1353791f5908f94d6e726
-	archiveFile, err := os.OpenFile(archiveTo, os.O_CREATE|os.O_RDWR, os.FileMode(600))
+	archiveFile, err := os.OpenFile(archiveTo, os.O_CREATE|os.O_RDWR, os.FileMode(0644))
 	gzipWriter := gzip.NewWriter(archiveFile)
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer archiveFile.Close()
@@ -74,6 +74,14 @@ func archiveTarGzip(src string, archiveTo string) error {
 		header.Name = "./" + filepath.ToSlash(strings.TrimPrefix(absPath, srcPath+separator))
 		if absPath != srcPath && fileInfo.IsDir() {
 			header.Name += "/"
+		}
+		if uid >= 0 {
+			header.Uid = uid
+			header.Uname = ""
+		}
+		if gid >= 0 {
+			header.Gid = gid
+			header.Gname = ""
 		}
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
@@ -133,7 +141,7 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			}
 		} else if method == ArchiveMethodTarGzip {
 			log.Infof("Archiving upperdir from %s to %s for archive %s", upperDir, archive.ArchiveTo, archive.Name)
-			err := archiveTarGzip(upperDir, archive.ArchiveTo)
+			err := archiveTarGzip(upperDir, archive.ArchiveTo, -1, -1)
 			if err != nil {
 				log.Fatalf("Failed to archive tar.gz from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
 			}

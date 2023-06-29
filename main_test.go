@@ -1,11 +1,14 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -160,8 +163,36 @@ func Test_archiveTarGzip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = archiveTarGzip(srcDir, outputFile)
+	err = archiveTarGzip(srcDir, outputFile, 2000, 3000)
 	if err != nil {
 		t.Fatal(err)
+	}
+	fileReader, err := os.Open(outputFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fileReader.Close()
+
+	gzipReader, err := gzip.NewReader(fileReader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tarReader := tar.NewReader(gzipReader)
+	tarHeaders := map[string]tar.Header{}
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			t.Fatal(err)
+		}
+		tarHeaders[header.Name] = *header
+	}
+	for _, name := range []string{"./", "./nested/", "./nested/dir/", "./nested/dir/file.txt", "./nested/dir/.wh.deleted.txt"} {
+		assert.Contains(t, tarHeaders, name)
+		assert.Equal(t, tarHeaders[name].Uid, 2000)
+		assert.Equal(t, tarHeaders[name].Uname, "")
+		assert.Equal(t, tarHeaders[name].Gid, 3000)
+		assert.Equal(t, tarHeaders[name].Gname, "")
 	}
 }
