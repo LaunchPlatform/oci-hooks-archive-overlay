@@ -8,8 +8,10 @@ import (
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	logrusSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/spf13/cobra"
 	"io"
+	"log/syslog"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,6 +26,7 @@ const (
 var (
 	LogLevels = []string{"trace", "debug", "info", "warn", "warning", "error", "fatal", "panic"}
 	logLevel  = defaultLogLevel
+	useSyslog = false
 )
 
 func loadSpec(stateInput io.Reader) spec.Spec {
@@ -190,6 +193,25 @@ func setupLogLevel() {
 	log.SetLevel(level)
 }
 
+func initSyslog() {
+	if !useSyslog {
+		return
+	}
+	hook, err := logrusSyslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to enable syslog with error %s", err)
+		return
+	}
+	log.AddHook(hook)
+}
+
+func init() {
+	// Hooks are called before PersistentPreRunE(). These hooks affect global
+	// state and are executed after processing the command-line, but before
+	// actually running the command.
+	cobra.OnInitialize(initSyslog)
+}
+
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:     "archive_overlay [options]",
@@ -208,6 +230,14 @@ func main() {
 		logLevelFlagName,
 		logLevel,
 		fmt.Sprintf("Log messages above specified level (%s)", strings.Join(LogLevels, ", ")),
+	)
+
+	syslogFlagName := "syslog"
+	pFlags.BoolVar(
+		&useSyslog,
+		syslogFlagName,
+		useSyslog,
+		fmt.Sprintf("Log messages to syslog"),
 	)
 
 	err := rootCmd.Execute()
