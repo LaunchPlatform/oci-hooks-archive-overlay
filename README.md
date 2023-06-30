@@ -131,3 +131,8 @@ run.oci.hooks.stderr=/path/to/stderr
 
 to make the runtime redirect the stderr from the hook executable to specific file.
 Please note that podman invokes poststop hook instead of delegating it to crun, so the annotation won't work for podman.
+
+## Syslog
+
+You can also pass `--syslog` option to make the hook omits log messages to syslog.
+However, please ensure that you have syslog daemon running on your system otherwise the hook still runs but no log messages will be sent.
