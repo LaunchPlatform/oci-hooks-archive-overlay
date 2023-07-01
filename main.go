@@ -146,10 +146,9 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			}
 		}
 		if upperDir == "" {
-			log.Fatalf(
-				"Cannot find upperdir for archive %s in mount %s from mount options %s",
+			log.WithFields(log.Fields{"mount": mount}).Fatalf(
+				"Cannot find upperdir for archive %s in mount with mount options %s",
 				archive.Name,
-				mount,
 				mountOptions,
 			)
 		}
