@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "oci-hooks-archive-overlay"
+version = "0.0.0"
+description = "OCI hooks for archiving overlay mount upperdir"
+authors = ["Fang-Pen Lin <fangpen@launchplatform.com>"]
+license = "MIT"
+repository = "https://github.com/LaunchPlatform/oci-hooks-archive-overlay"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+container-helpers = "^0.0.4"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

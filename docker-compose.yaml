@@ -1,0 +1,27 @@
+version: '3'
+services:
+  build:
+    image: circleci/golang:1.17.5
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        go mod download && \
+        CGO_ENABLED=0 go build -o /artifacts/archive_overlay -a -ldflags '-extldflags "-static"' .
+    volumes:
+      - ./artifacts:/artifacts
+  test:
+    build: .
+    command:
+    - /bin/sh
+    - "-c"
+    - |
+      python -m pytest -svvv ./tests
+    working_dir: /project
+    privileged: true
+    volumes:
+    - .:/project
+    - ./artifacts/archive_overlay:/usr/bin/archive_overlay:ro
+    - ./configs/archive-overlay.json:/usr/share/containers/oci/hooks.d/archive-overlay.json:ro
+    depends_on:
+      - build
