@@ -108,14 +108,13 @@ func archiveTarGzip(src string, archiveTo string, uid int, gid int) error {
 
 func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Archive) {
 	for _, mount := range containerSpec.Mounts {
-		if mount.Type != "overlay" {
-			log.Warnf("Unexpected mount type %s, only overlap supported for now, ignored mount at %s", mount.Type, mount.Destination)
-			continue
-		}
 		archive, ok := mountPointArchives[mount.Destination]
 		if !ok {
 			log.Tracef("Cannot find mount point %s to archive, skip", mount.Destination)
 			continue
+		}
+		if mount.Type != "overlay" {
+			log.Fatalf("Unexpected mount type %s at %s, only overlay supported", mount.Type, mount.Destination)
 		}
 		var upperDir = ""
 		for _, option := range mount.Options {
