@@ -33,6 +33,7 @@ def image() -> str:
     return "alpine:3.18.2"
 
 
+@pytest.fixture
 def image_mount(image: str) -> ImageMountWithArchive:
     return ImageMountWithArchive(
         source=image,
@@ -65,7 +66,7 @@ class TestArchive:
         self.image_mount.archive_to = archive_to
         container = Container(
             command=("/bin/sh", "-c", "echo hello > /data/file"),
-            image="alpine:3.18.2",
+            image=self.image,
             mounts=[self.image_mount],
             network="none",
         )
@@ -129,8 +130,8 @@ class TestArchive:
         self.image_mount.archive_success = archive_success
         container = Container(
             command=("/bin/sh", "-c", "echo hello > /data/file"),
-            image="alpine:3.18.2",
-            mounts=[image_mount],
+            image=self.image,
+            mounts=[self.image_mount],
             network="none",
         )
         async with self.run(container) as proc:
