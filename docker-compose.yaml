@@ -8,7 +8,9 @@ services:
       - |
         go mod download && \
         CGO_ENABLED=0 go build -o /artifacts/archive_overlay -a -ldflags '-extldflags "-static"' .
+    working_dir: /project/
     volumes:
+      - .:/project/
       - ./artifacts:/artifacts
   test:
     build: .

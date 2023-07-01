@@ -9,6 +9,7 @@ import (
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	logrusSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/spf13/cobra"
 	"io"
 	"log/syslog"
