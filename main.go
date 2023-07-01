@@ -121,7 +121,7 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 		if mount.Type == "overlay" {
 			// For root run, podman is going to use overlay directly and this will be an overlay mount
 			log.Debugf("Overlay mount found at %s with options %s", mount.Destination, mount.Options)
-
+			mountOptions = mount.Options
 		} else if mount.Type == "bind" {
 			if !fuseMountListed {
 				fuseMountOptions = listFuseMountOptions()
@@ -146,14 +146,10 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			}
 		}
 		if upperDir == "" {
-			mountJson, err := json.Marshal(mount)
-			if err != nil {
-				log.Fatal(err)
-			}
 			log.Fatalf(
 				"Cannot find upperdir for archive %s in mount %s from mount options %s",
 				archive.Name,
-				string(mountJson),
+				mount,
 				mountOptions,
 			)
 		}
