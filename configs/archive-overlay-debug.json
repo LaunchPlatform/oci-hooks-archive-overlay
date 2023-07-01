@@ -4,7 +4,7 @@
     "path": "/usr/bin/archive_overlay",
     "args": [
       "/usr/bin/archive_overlay",
-      "--log-level=debug",
+      "--log-level=trace",
       "--syslog"
     ]
   },

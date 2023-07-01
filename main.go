@@ -108,6 +108,19 @@ func archiveTarGzip(src string, archiveTo string, uid int, gid int) error {
 }
 
 func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Archive) {
+	log.Tracef("Enumerate current system mounts ...")
+	systemMounts := map[string]mountinfo.Info{}
+	if mounts, err := mountinfo.GetMounts(nil); err != nil {
+		for _, m := range mounts {
+			log.WithFields(log.Fields{
+				"mount": m,
+			}).Tracef("Found current system mount")
+			systemMounts[m.Mountpoint] = *m
+		}
+	} else {
+		log.Fatalf("Failed to enumerate current system mounts with error: %s", err)
+	}
+
 	for _, mount := range containerSpec.Mounts {
 		archive, ok := mountPointArchives[mount.Destination]
 		if !ok {
@@ -124,17 +137,12 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			log.Debugf("Bind mount found at %s", mount.Destination)
 			// For rootless run, podman is going to use fuse-overlayfs mount, and this will be a
 			// bind mount, so we need to find out the options from mounts
-			if mounts, err := mountinfo.GetMounts(nil); err == nil {
-				for _, m := range mounts {
-					if m.Mountpoint == mount.Destination {
-						log.Debugf("Found options %s from bind mount-point at %s with type %s", m.Options, mount.Destination, m.FSType)
-						// TODO: check type and only support overlay or fuse-overlay?
-						mountOptions = strings.Split(m.Options, ",")
-						break
-					}
-				}
+			systemMount, ok := systemMounts[mount.Destination]
+			if !ok {
+				log.Fatalf("No mount found for %s", mount.Destination)
+				continue
 			}
-			log.Fatalf("No mount found for %s", mount.Destination)
+			mountOptions = strings.Split(systemMount.Options, ",")
 		} else {
 			log.Fatalf("Unexpected mount type %s at %s, only overlay supported", mount.Type, mount.Destination)
 		}

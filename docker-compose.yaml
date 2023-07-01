@@ -7,18 +7,21 @@ services:
       - -c
       - |
         go mod download && \
-        CGO_ENABLED=0 go build -o /artifacts/archive_overlay -a -ldflags '-extldflags "-static"' .
+        mkdir /tmp/artifacts && \
+        CGO_ENABLED=0 go build -o /tmp/artifacts/archive_overlay -a -ldflags '-extldflags "-static"' . && \
+        mkdir -p ./artifacts && \
+        mv /tmp/artifacts/archive_overlay* ./artifacts/
+    user: root
     working_dir: /project/
     volumes:
       - .:/project/
-      - ./artifacts:/artifacts
   test:
     build: .
     command:
     - /bin/sh
     - "-c"
     - |
-      python -m pytest -svvv ./tests
+      python -m pytest -svvv ./tests || cat /var/log/syslogd/everything/current
     working_dir: /project
     privileged: true
     volumes:
