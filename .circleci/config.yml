@@ -24,6 +24,24 @@ jobs:
             gotestsum --junitfile /tmp/test-reports/unit-tests.xml
       - store_test_results:
           path: /tmp/test-reports
+  test-fuse-mount:
+    machine:
+      image: ubuntu-2004:202111-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - run:
+          name: Run test
+          command: docker-compose run test-fuse-mount
+  test-native-mount:
+    machine:
+      image: ubuntu-2004:202111-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - run:
+          name: Run test
+          command: docker-compose run test-native-mount
   build:
     working_directory: ~/repo
     docker:
@@ -77,6 +95,8 @@ workflows:
       - build:
           requires:
           - test
+          - test-fuse-mount
+          - test-native-mount
           filters:
             # needed for deploy build
             # ref: https://discuss.circleci.com/t/builds-for-tags-not-triggering/17681/7
