@@ -11,14 +11,6 @@ ARG _REPO_URL="https://raw.githubusercontent.com/containers/podman/v4.5.1/contri
 ADD $_REPO_URL/containers.conf /etc/containers/containers.conf
 ADD $_REPO_URL/podman-containers.conf /home/podman/.config/containers/containers.conf
 
-# Copy & modify the defaults to provide reference if runtime changes needed.
-# Changes here are required for running with fuse-overlay storage inside container.
-RUN sed -e 's|^#mount_program|mount_program|g' \
-           -e '/additionalimage.*/a "/var/lib/shared",' \
-           -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' \
-           /usr/share/containers/storage.conf \
-           > /etc/containers/storage.conf
-
 RUN mkdir /project
 WORKDIR /project
 

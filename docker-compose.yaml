@@ -28,6 +28,7 @@ services:
     - .:/project
     - ./artifacts/archive_overlay:/usr/bin/archive_overlay:ro
     - ./configs/archive-overlay-debug.json:/usr/share/containers/oci/hooks.d/archive-overlay.json:ro
+    - ./tests/data/fuse-storage.conf:/etc/containers/storage.conf
     depends_on:
       - build
   test-native-mount:
@@ -43,5 +44,6 @@ services:
     - .:/project
     - ./artifacts/archive_overlay:/usr/bin/archive_overlay:ro
     - ./configs/archive-overlay-debug.json:/usr/share/containers/oci/hooks.d/archive-overlay.json:ro
+    - ./tests/data/mount-storage.conf:/etc/containers/storage.conf
     depends_on:
       - build
