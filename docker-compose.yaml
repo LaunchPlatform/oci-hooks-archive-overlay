@@ -15,7 +15,22 @@ services:
     working_dir: /project/
     volumes:
       - .:/project/
-  test:
+  test-fuse-mount:
+    build: .
+    command:
+    - /bin/sh
+    - "-c"
+    - |
+      python -m pytest -svvv ./tests || cat /var/log/syslogd/everything/current
+    working_dir: /project
+    privileged: true
+    volumes:
+    - .:/project
+    - ./artifacts/archive_overlay:/usr/bin/archive_overlay:ro
+    - ./configs/archive-overlay-debug.json:/usr/share/containers/oci/hooks.d/archive-overlay.json:ro
+    depends_on:
+      - build
+  test-native-mount:
     build: .
     command:
     - /bin/sh
