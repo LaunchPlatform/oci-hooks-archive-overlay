@@ -82,6 +82,42 @@ async def test_archive_with_targz(
 
 
 @pytest.mark.asyncio
+async def test_archive_with_targz_chown(
+    tmp_path: pathlib.Path, containers: ContainersService
+):
+    data_image = "alpine:3.18.2"
+    await containers.load_image(data_image)
+
+    archive_to = tmp_path / "archive.tar.gz"
+
+    image_mount = ImageMountWithArchive(
+        source=data_image,
+        target="/data",
+        read_write=True,
+        archive_to=archive_to,
+        archive_method="tar.gz",
+        archive_tar_content_owner="2000:3000",
+    )
+    container = Container(
+        command=("/bin/sh", "-c", "echo hello > /data/file"),
+        image="alpine:3.18.2",
+        mounts=[image_mount],
+        network="none",
+    )
+    async with containers.run(container, log_level="debug") as proc:
+        assert await proc.wait() == 0
+
+    assert archive_to.exists()
+    with tarfile.open(archive_to, "r:gz") as tar_file:
+        members = {tar_info.name: tar_info for tar_info in tar_file.getmembers()}
+        for member in members:
+            assert member.uid == 2000
+            assert member.uname == ""
+            assert member.gid == 3000
+            assert member.gname == ""
+
+
+@pytest.mark.asyncio
 async def test_archive_success(tmp_path: pathlib.Path, containers: ContainersService):
     data_image = "alpine:3.18.2"
     await containers.load_image(data_image)
