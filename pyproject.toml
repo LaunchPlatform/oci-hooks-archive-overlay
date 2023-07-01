@@ -14,7 +14,7 @@ python = "^3.9"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 pytest-asyncio = "^0.21.0"
-container-helpers = "^0.0.4"
+container-helpers = "^0.0.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -14,14 +14,14 @@ files = [
 
 [[package]]
 name = "container-helpers"
-version = "0.0.4"
+version = "0.0.5"
 description = "Helpers for running docker or podman containers easily in Python"
 category = "dev"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "container_helpers-0.0.4-py3-none-any.whl", hash = "sha256:e86e1349b4c746e851985d95c25741dddb0fb27d563fba8b6623b79aca970f46"},
-    {file = "container_helpers-0.0.4.tar.gz", hash = "sha256:e3deb4e216f25159cf5c1efbce34ca6d357a02e6444875664f4e0275a598b364"},
+    {file = "container_helpers-0.0.5-py3-none-any.whl", hash = "sha256:f948485adeef5ea8d1cba5a7c6d59e1649109f8a943a95ffe03010fe3a43d397"},
+    {file = "container_helpers-0.0.5.tar.gz", hash = "sha256:b18f8b07fe10e895a2988a43abb453efa3a60a00409c8e9f7d42b42f581492d4"},
 ]
 
 [[package]]
@@ -136,4 +136,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "29a8d24477b7e90920973019a2265ad5c12b0c638d02379ecdae0ec6fa3ce0df"
+content-hash = "165833c3b462cd5f833cecdacf31cb31d237c2e03d5302f88f997d95c4ccbc09"
