@@ -21,7 +21,13 @@ services:
     - /bin/sh
     - "-c"
     - |
-      python -m pytest -svvv ./tests || cat /var/log/syslogd/everything/current
+      python -m pytest -svvv ./tests
+      ret=$$?
+      if [ $$ret -ne 0 ]; then
+        echo "----- Test failed, dump syslog -----"
+        cat /var/log/syslogd/everything/current
+        exit $$ret
+      fi
     working_dir: /project
     privileged: true
     volumes:
@@ -37,7 +43,13 @@ services:
     - /bin/sh
     - "-c"
     - |
-      python -m pytest -svvv ./tests || cat /var/log/syslogd/everything/current
+      python -m pytest -svvv ./tests
+      ret=$$?
+      if [ $$ret -ne 0 ]; then
+        echo "----- Test failed, dump syslog -----"
+        cat /var/log/syslogd/everything/current
+        exit $$ret
+      fi
     working_dir: /project
     privileged: true
     volumes:
