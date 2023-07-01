@@ -36,6 +36,7 @@ async def test_archive_with_copy(tmp_path: pathlib.Path, containers: ContainersS
         command=("/bin/sh", "-c", "echo hello > /data/file"),
         image="alpine:3.18.2",
         mounts=[image_mount],
+        network="none",
     )
     async with containers.run(container, log_level="debug") as proc:
         assert await proc.wait() == 0
