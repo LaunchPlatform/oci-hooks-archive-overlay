@@ -1,5 +1,6 @@
 import functools
 import pathlib
+import sys
 import tarfile
 import typing
 
@@ -7,15 +8,15 @@ import pytest
 import pytest_asyncio
 from containers import Container
 from containers import ContainersService
-from containers import make_containers_service
 
 from .data_types import ImageMountWithArchive
 from .providers import PodmanWithArchive
+from .service import WindowsContainersServiceWithArchive
 
 
 @pytest.fixture
 def log_level() -> typing.Optional[str]:
-    return None
+    return "debug"
 
 
 @pytest.fixture
@@ -25,7 +26,9 @@ def podman() -> PodmanWithArchive:
 
 @pytest.fixture
 def containers(podman: PodmanWithArchive) -> ContainersService:
-    return make_containers_service(podman)
+    if sys.platform == "win32":
+        return WindowsContainersServiceWithArchive(podman)
+    return ContainersService(podman)
 
 
 @pytest.fixture
