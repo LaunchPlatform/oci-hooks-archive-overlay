@@ -5,9 +5,9 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/moby/sys/mountinfo"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	cp "github.com/otiai10/copy"
+	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
 	logrusSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/spf13/cobra"
@@ -25,9 +25,10 @@ const (
 )
 
 var (
-	LogLevels = []string{"trace", "debug", "info", "warn", "warning", "error", "fatal", "panic"}
-	logLevel  = defaultLogLevel
-	useSyslog = false
+	LogLevels    = []string{"trace", "debug", "info", "warn", "warning", "error", "fatal", "panic"}
+	logLevel     = defaultLogLevel
+	useSyslog    = false
+	mountProgram = "/usr/bin/fuse-overlayfs"
 )
 
 func loadSpec(stateInput io.Reader) spec.Spec {
@@ -108,48 +109,37 @@ func archiveTarGzip(src string, archiveTo string, uid int, gid int) error {
 }
 
 func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Archive) {
-	log.Tracef("Enumerate current system mounts ...")
-	systemMounts := map[string]mountinfo.Info{}
-	if mounts, err := mountinfo.GetMounts(nil); err != nil {
-		for _, m := range mounts {
-			log.WithFields(log.Fields{
-				"mount": m,
-			}).Tracef("Found current system mount")
-			systemMounts[m.Mountpoint] = *m
-		}
-	} else {
-		log.Fatalf("Failed to enumerate current system mounts with error: %s", err)
-	}
-
+	var fuseMountListed = false
+	var fuseMountOptions = map[string][]string{}
 	for _, mount := range containerSpec.Mounts {
 		archive, ok := mountPointArchives[mount.Destination]
 		if !ok {
 			log.Tracef("Cannot find mount point %s to archive, skip", mount.Destination)
 			continue
 		}
-		var upperDir = ""
 		var mountOptions []string
 		if mount.Type == "overlay" {
-			log.Debugf("Overlay mount found at %s", mount.Destination)
 			// For root run, podman is going to use overlay directly and this will be an overlay mount
-			mountOptions = mount.Options
+			log.Debugf("Overlay mount found at %s with options %s", mount.Destination, mount.Options)
+
 		} else if mount.Type == "bind" {
-			log.Debugf("Bind mount found at %s", mount.Destination)
+			if !fuseMountListed {
+				fuseMountOptions = listFuseMountOptions()
+				fuseMountListed = true
+			}
 			// For rootless run, podman is going to use fuse-overlayfs mount, and this will be a
-			// bind mount, so we need to find out the options from mounts
-			systemMount, ok := systemMounts[mount.Destination]
+			// bind mount, so we need to find out the options from mounts.
+			mountOptions, ok = fuseMountOptions[mount.Source]
 			if !ok {
-				log.Fatalf("No mount found for %s", mount.Destination)
+				log.Fatalf("No fuse mount found for %s", mount.Destination)
 				continue
 			}
-			mountOptions = strings.Split(systemMount.Options, ",")
+			log.Debugf("Bind mount source fuse mount options %s found for %s", fuseMountOptions, mount.Destination)
 		} else {
 			log.Fatalf("Unexpected mount type %s at %s, only overlay supported", mount.Type, mount.Destination)
 		}
-		if len(mountOptions) == 0 {
-			log.Fatalf("No mount options found for %s", mount.Destination)
-		}
-		for _, option := range mount.Options {
+		var upperDir = ""
+		for _, option := range mountOptions {
 			if strings.HasPrefix(option, upperDirPrefix) {
 				upperDir = option[len(upperDirPrefix):]
 				break
@@ -160,7 +150,12 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Fatalf("Cannot find upperdir for archive %s in mount %s", archive.Name, string(mountJson))
+			log.Fatalf(
+				"Cannot find upperdir for archive %s in mount %s from mount options %s",
+				archive.Name,
+				string(mountJson),
+				mountOptions,
+			)
 		}
 
 		var method = archive.Method
@@ -189,6 +184,55 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			}
 		}
 	}
+}
+
+func listFuseMountOptions() map[string][]string {
+	log.Infof("Enumerate fuse mount processes with mount program %s ...", mountProgram)
+	mountOptions := map[string][]string{}
+	processes, err := process.Processes()
+	if err != nil {
+		log.Fatalf("Failed to fetch processes")
+	}
+	for _, proc := range processes {
+		exe, err := proc.Exe()
+		if err != nil {
+			log.Warnf("Cannot get exe of proc %d, skip", proc.Pid)
+			continue
+		}
+		if exe != mountProgram {
+			continue
+		}
+		cmd, err := proc.CmdlineSlice()
+		if err != nil {
+			log.Warnf("Cannot get cmd of proc %d, skip", proc.Pid)
+			continue
+		}
+		var lastOption string
+		var fuseMountOption string
+		var fuseMountPoint string
+		for _, arg := range cmd {
+			if strings.HasPrefix(arg, "-") {
+				lastOption = arg
+				continue
+			}
+			if lastOption == "-o" {
+				fuseMountOption = arg
+			} else if lastOption == "" {
+				fuseMountPoint = arg
+			}
+			lastOption = ""
+		}
+		if fuseMountOption == "" {
+			log.Warnf("Cannot find option argument of mount process %d, skip", proc.Pid)
+			continue
+		}
+		if fuseMountPoint == "" {
+			log.Warnf("Cannot find mount point argument of mount process %d, skip", proc.Pid)
+			continue
+		}
+		mountOptions[fuseMountPoint] = strings.Split(fuseMountOption, ",")
+	}
+	return mountOptions
 }
 
 func run() {
@@ -269,6 +313,14 @@ func main() {
 		syslogFlagName,
 		useSyslog,
 		fmt.Sprintf("Log messages to syslog"),
+	)
+
+	mountProgramFlagName := "mount-program"
+	pFlags.StringVar(
+		&mountProgram,
+		mountProgramFlagName,
+		mountProgram,
+		fmt.Sprintf("The paht to mount program used by the OCI runtime, used for looking up fuse mount options"),
 	)
 
 	err := rootCmd.Execute()
