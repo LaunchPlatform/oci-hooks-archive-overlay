@@ -3,6 +3,7 @@ module github.com/launchplatform/oci-hooks-archive-overlay
 go 1.18
 
 require (
+	github.com/moby/sys/mountinfo v0.6.2
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3
 	github.com/otiai10/copy v1.11.0
 	github.com/sirupsen/logrus v1.9.3

@@ -5,10 +5,10 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/moby/sys/mountinfo"
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	cp "github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
-	logrusSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/spf13/cobra"
 	"io"
 	"log/syslog"
@@ -113,10 +113,33 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			log.Tracef("Cannot find mount point %s to archive, skip", mount.Destination)
 			continue
 		}
-		if mount.Type != "overlay" {
+		var upperDir = ""
+		var mountOptions []string
+		if mount.Type == "overlay" {
+			log.Debugf("Overlay mount found at %s", mount.Destination)
+			// For root run, podman is going to use overlay directly and this will be an overlay mount
+			mountOptions = mount.Options
+		} else if mount.Type == "bind" {
+			log.Debugf("Bind mount found at %s", mount.Destination)
+			// For rootless run, podman is going to use fuse-overlayfs mount, and this will be a
+			// bind mount, so we need to find out the options from mounts
+			if mounts, err := mountinfo.GetMounts(nil); err == nil {
+				for _, m := range mounts {
+					if m.Mountpoint == mount.Destination {
+						log.Debugf("Found options %s from bind mount-point at %s with type %s", m.Options, mount.Destination, m.FSType)
+						// TODO: check type and only support overlay or fuse-overlay?
+						mountOptions = strings.Split(m.Options, ",")
+						break
+					}
+				}
+			}
+			log.Fatalf("No mount found for %s", mount.Destination)
+		} else {
 			log.Fatalf("Unexpected mount type %s at %s, only overlay supported", mount.Type, mount.Destination)
 		}
-		var upperDir = ""
+		if len(mountOptions) == 0 {
+			log.Fatalf("No mount options found for %s", mount.Destination)
+		}
 		for _, option := range mount.Options {
 			if strings.HasPrefix(option, upperDirPrefix) {
 				upperDir = option[len(upperDirPrefix):]
