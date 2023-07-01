@@ -22,6 +22,6 @@ services:
     volumes:
     - .:/project
     - ./artifacts/archive_overlay:/usr/bin/archive_overlay:ro
-    - ./configs/archive-overlay.json:/usr/share/containers/oci/hooks.d/archive-overlay.json:ro
+    - ./configs/archive-overlay-debug.json:/usr/share/containers/oci/hooks.d/archive-overlay.json:ro
     depends_on:
       - build

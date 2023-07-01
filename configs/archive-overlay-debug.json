@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "hook": {
+    "path": "/usr/bin/archive_overlay",
+    "args": [
+      "/usr/bin/archive_overlay",
+      "--log-level=debug",
+      "--syslog"
+    ]
+  },
+  "when": {
+    "annotations": {
+        "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.([^.]+)\\.mount-point": "(.+)",
+        "com\\.launchplatform\\.oci-hooks\\.archive-overlay\\.([^.]+)\\.archive-to": "(.+)"
+    }
+  },
+  "stages": ["poststop"]
+}
