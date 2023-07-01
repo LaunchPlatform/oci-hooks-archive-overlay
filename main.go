@@ -170,7 +170,7 @@ func archiveUpperDirs(containerSpec spec.Spec, mountPointArchives map[string]Arc
 			}
 		} else if method == ArchiveMethodTarGzip {
 			log.Infof("Archiving upperdir from %s to %s for archive %s", upperDir, archive.ArchiveTo, archive.Name)
-			err := archiveTarGzip(upperDir, archive.ArchiveTo, -1, -1)
+			err := archiveTarGzip(upperDir, archive.ArchiveTo, archive.TarUser, archive.TarGroup)
 			if err != nil {
 				log.Fatalf("Failed to archive tar.gz from %s to %s for archive %s with error %s", upperDir, archive.ArchiveTo, archive.Name, err)
 			}

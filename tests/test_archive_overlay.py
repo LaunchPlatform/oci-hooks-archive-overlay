@@ -109,8 +109,7 @@ async def test_archive_with_targz_chown(
 
     assert archive_to.exists()
     with tarfile.open(archive_to, "r:gz") as tar_file:
-        members = {tar_info.name: tar_info for tar_info in tar_file.getmembers()}
-        for member in members:
+        for member in tar_file.getmembers():
             assert member.uid == 2000
             assert member.uname == ""
             assert member.gid == 3000
