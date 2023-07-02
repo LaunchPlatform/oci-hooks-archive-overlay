@@ -1,4 +1,6 @@
+import asyncio
 import functools
+import os
 import pathlib
 import sys
 import tarfile
@@ -10,8 +12,14 @@ from containers import Container
 from containers import ContainersService
 
 from .data_types import ImageMountWithArchive
+from .helpers import assert_has_whiteout_device
+from .helpers import assert_has_whiteout_file
 from .providers import PodmanWithArchive
 from .service import WindowsContainersServiceWithArchive
+
+
+# Are we using rootless whiteout?
+USE_ROOTLESS_WHITEOUT = os.getenv("USE_ROOTLESS_WHITEOUT", None) == "1"
 
 
 @pytest.fixture
@@ -144,3 +152,46 @@ class TestArchive:
         assert file_path.exists()
         assert file_path.read_text().strip() == "hello"
         assert archive_success.read_text() == ""
+
+    @pytest.mark.asyncio
+    async def test_archive_with_white_out_files(self):
+        archive_to = self.tmp_path / "archive"
+        archive_success = self.tmp_path / "success"
+        self.image_mount.archive_to = archive_to
+        self.image_mount.archive_success = archive_success
+        self.image_mount.archive_method = "tar.gz"
+        container = Container(
+            command=(
+                "/bin/sh",
+                "-c",
+                "rm -rf /data/var/empty && rm -rf /data/usr/bin/diff",
+            ),
+            image=self.image,
+            mounts=[self.image_mount],
+            network="none",
+        )
+        async with self.run(container) as proc:
+            assert await proc.wait() == 0
+
+        assert archive_success.read_text() == ""
+        with tarfile.open(archive_to, "r:gz") as tar_file:
+            if USE_ROOTLESS_WHITEOUT:
+                assert_has_whiteout_file(
+                    path=pathlib.PurePosixPath("./usr/bin/diff"),
+                    prefix=".wh.",
+                    tar_file=tar_file,
+                )
+                assert_has_whiteout_file(
+                    path=pathlib.PurePosixPath("./var/empty"),
+                    prefix=".wh.wh.opq",
+                    tar_file=tar_file,
+                )
+            else:
+                assert_has_whiteout_device(
+                    path=pathlib.PurePosixPath("./usr/bin/diff"),
+                    tar_file=tar_file,
+                )
+                assert_has_whiteout_device(
+                    path=pathlib.PurePosixPath("./var/empty"),
+                    tar_file=tar_file,
+                )
