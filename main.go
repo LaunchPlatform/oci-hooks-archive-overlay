@@ -12,6 +12,7 @@ import (
 	logrusSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/spf13/cobra"
 	"io"
+	"io/fs"
 	"log/syslog"
 	"os"
 	"path"
@@ -91,7 +92,7 @@ func archiveTarGzip(src string, archiveTo string, uid int, gid int) error {
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
-		if !fileInfo.IsDir() {
+		if !fileInfo.IsDir() && fileInfo.Mode()&fs.ModeDevice == 0 {
 			data, err := os.Open(path)
 			if err != nil {
 				return err
