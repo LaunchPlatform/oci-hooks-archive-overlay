@@ -4,7 +4,7 @@ import tarfile
 
 def assert_has_whiteout_file(
     path: pathlib.PurePosixPath, prefix: str, tar_file: tarfile.TarFile
-) -> bool:
+):
     wh_name = "./" + str(path.with_name(f"{prefix}{path.name}"))
     try:
         tar_file.getmember(wh_name)
@@ -14,9 +14,7 @@ def assert_has_whiteout_file(
         ), f"Cannot find whiteout name {wh_name} among members {[info.name for info in tar_file.getmembers()]}"
 
 
-def assert_has_whiteout_device(
-    path: pathlib.PurePosixPath, tar_file: tarfile.TarFile
-) -> bool:
+def assert_has_whiteout_device(path: pathlib.PurePosixPath, tar_file: tarfile.TarFile):
     name = "./" + str(path)
     try:
         member = tar_file.getmember(name)
