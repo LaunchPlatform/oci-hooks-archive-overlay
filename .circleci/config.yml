@@ -1,5 +1,5 @@
 version: 2.1
- jobs:
+jobs:
   docker-purge:
     docker:
       - image: cimg/base:2020.01
