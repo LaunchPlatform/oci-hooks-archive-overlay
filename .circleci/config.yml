@@ -1,13 +1,132 @@
 version: 2.1
+
 jobs:
-  docker-purge:
+  test:
+    working_directory: ~/repo
     docker:
-      - image: cimg/base:2020.01
-    parallelism: 30
+      - image: circleci/golang:1.17.5
     steps:
-      - setup_remote_docker
-      - run: docker volume prune -f
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Install Dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p /tmp/test-reports
+            gotestsum --junitfile /tmp/test-reports/unit-tests.xml
+      - store_test_results:
+          path: /tmp/test-reports
+  build:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/golang:1.17.5
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Install Dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+      - run:
+          name: Build
+          command: |
+            mkdir /tmp/artifacts
+            CGO_ENABLED=0 go build -o /tmp/artifacts/archive_overlay -a -ldflags '-extldflags "-static"' .
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: artifacts
+      - persist_to_workspace:
+          root: /tmp/artifacts
+          paths:
+            - "*"
+  e2e-test-fuse-mount:
+    machine:
+      image: ubuntu-2004:202111-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: Run test
+          command: |
+            docker-compose run test-fuse-mount
+  e2e-test-native-mount:
+    machine:
+      image: ubuntu-2004:202111-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: Run test
+          command: docker-compose run test-native-mount
+  publish-github-release:
+    docker:
+      - image: circleci/golang:1.17.5
+    steps:
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            go install github.com/tcnksm/ghr@v0.16.0
+            VERSION=$(./artifacts/archive_overlay --version | cut -d' ' -f3)
+            echo "Version: $VERSION"
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -generatenotes ${VERSION} ./artifacts/
 workflows:
-  docker-purge:
+  build_and_publish:
     jobs:
-      - docker-purge
+      - test:
+          filters:
+            # needed for deploy build
+            # ref: https://discuss.circleci.com/t/builds-for-tags-not-triggering/17681/7
+            tags:
+              only: /^.*/
+      - build:
+          requires:
+          - test
+          filters:
+            # needed for deploy build
+            # ref: https://discuss.circleci.com/t/builds-for-tags-not-triggering/17681/7
+            tags:
+              only: /^.*/
+      - e2e-test-fuse-mount:
+          requires:
+            - build
+          filters:
+            # needed for deploy build
+            # ref: https://discuss.circleci.com/t/builds-for-tags-not-triggering/17681/7
+            tags:
+              only: /^.*/
+      - e2e-test-native-mount:
+          requires:
+            - build
+          filters:
+            # needed for deploy build
+            # ref: https://discuss.circleci.com/t/builds-for-tags-not-triggering/17681/7
+            tags:
+              only: /^.*/
+      - publish-github-release:
+          requires:
+            - e2e-test-fuse-mount
+            - e2e-test-native-mount
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^.*/
