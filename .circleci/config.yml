@@ -63,6 +63,7 @@ jobs:
       - run:
           name: Run test
           command: |
+            docker-compose build test-fuse-mount
             docker-compose run test-fuse-mount
   e2e-test-native-mount:
     machine:
@@ -74,7 +75,9 @@ jobs:
           at: ./artifacts
       - run:
           name: Run test
-          command: docker-compose run test-native-mount
+          command: |
+            docker-compose build test-native-mount
+            docker-compose run test-native-mount
   publish-github-release:
     docker:
       - image: circleci/golang:1.17.5
